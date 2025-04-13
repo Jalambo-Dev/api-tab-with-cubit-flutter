@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../cubit/news_cubit.dart';
@@ -62,12 +63,17 @@ class _NewsCategoryTabState extends State<NewsCategoryTab>
             child: Row(
               spacing: 8,
               children: [
-                Image.network(
-                  news[i].imageUrl ??
-                      'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSk8RLjeIEybu1xwZigumVersvGJXzhmG8-0Q&s',
-                  width: 100,
-                  height: 100,
-                  fit: BoxFit.cover,
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: CachedNetworkImage(
+                    imageUrl: news[i].imageUrl ?? 'assets/not-founded.png',
+                    errorWidget: (context, url, error) => Image.asset(
+                      'assets/not-founded.png',
+                    ),
+                    fit: BoxFit.cover,
+                    height: 100,
+                    width: 100,
+                  ),
                 ),
                 Flexible(
                   child: Column(
