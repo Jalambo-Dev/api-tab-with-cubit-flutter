@@ -1,8 +1,6 @@
-import 'dart:developer';
-
 import 'package:flutter/material.dart';
-import 'package:tabbar_demo/data/news_model.dart';
-import 'package:tabbar_demo/data/news_repo.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../cubit/news_cubit.dart';
 
 class NewsCategoryTab extends StatefulWidget {
   final String category;
@@ -14,75 +12,80 @@ class NewsCategoryTab extends StatefulWidget {
 
 class _NewsCategoryTabState extends State<NewsCategoryTab>
     with AutomaticKeepAliveClientMixin {
-  final NewsRepo _newsRepository = NewsRepo();
-  bool hasFetched = false;
-  bool isLoading = false;
-  List<NewsModel> news = [];
+  late final ScrollController _scrollController;
+
+  @override
+  void initState() {
+    _scrollController = ScrollController()..addListener(_onScroll);
+    super.initState();
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (!hasFetched) {
-      hasFetched = true;
-      loadNews();
-    }
+    context.read<NewsCubit>().fetchIfNeeded();
   }
 
-  Future<void> loadNews() async {
-    setState(() => isLoading = true);
-    try {
-      final fetchedNews =
-          await _newsRepository.fetchNewsByCategory(widget.category);
-      setState(() {
-        news = fetchedNews;
-        isLoading = false;
-      });
-    } catch (e) {
-      setState(() => isLoading = false);
-      log('Error: $e');
+  void _onScroll() {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 300) {
+      context.read<NewsCubit>().fetchMore();
     }
   }
 
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    if (isLoading) return Center(child: CircularProgressIndicator());
-    if (news.isEmpty) return Center(child: Text('No News'));
 
-    return ListView.builder(
-      itemCount: news.length,
-      itemBuilder: (context, index) {
-        return Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-          child: Row(
-            children: [
-              Image.network(
-                news[index].imageUrl ??
-                    'https://salonlfc.com/wp-content/uploads/2018/01/image-not-found-scaled.png', // Placeholder image
-                width: 100,
-                height: 100,
-                fit: BoxFit.cover,
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      news[index].title,
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 5),
-                    Text(
-                      news[index].source,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(color: Colors.grey),
-                    ),
-                  ],
+    return BlocBuilder<NewsCubit, NewsState>(
+      builder: (context, state) {
+        if (state.isLoading && state.news == null) {
+          return Center(child: CircularProgressIndicator());
+        }
+
+        if (state.isError) {
+          return Center(child: Text(state.errorMassage ?? 'Unknown error'));
+        }
+
+        final news = state.news ?? [];
+        return ListView.builder(
+          controller: _scrollController,
+          itemCount: news.length,
+          itemBuilder: (_, i) => Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+            child: Row(
+              spacing: 8,
+              children: [
+                Image.network(
+                  news[i].imageUrl ??
+                      'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSk8RLjeIEybu1xwZigumVersvGJXzhmG8-0Q&s',
+                  width: 100,
+                  height: 100,
+                  fit: BoxFit.cover,
                 ),
-              ),
-            ],
+                Flexible(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        news[i].title,
+                        style: TextStyle(fontSize: 16),
+                      ),
+                      Text(
+                        news[i].source,
+                        style: TextStyle(fontSize: 12),
+                      ),
+                    ],
+                  ),
+                )
+              ],
+            ),
           ),
         );
       },
