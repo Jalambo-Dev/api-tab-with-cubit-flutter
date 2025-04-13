@@ -12,6 +12,7 @@ A Flutter app demonstrating how to use TabBar with API integration and Cubit for
 
 ## Folder Structure
 
+```text
 lib/
 ├── cubit/
 │   ├── news_cubit.dart
@@ -24,6 +25,7 @@ lib/
 │   ├── home_screen.dart
 │   └── news_category_tab.dart
 └── main.dart
+```
 
 ## Getting Started
 
